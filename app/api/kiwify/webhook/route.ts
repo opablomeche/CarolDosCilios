@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     id,
     amount_cents: amount,
     created_at,
-    utm_source: tracking?.utm_source ?? null,
+    utm_source:  tracking?.utm_source  ?? null,
+    utm_content: tracking?.utm_content ?? null,
   })
 
   return NextResponse.json({ ok: true })

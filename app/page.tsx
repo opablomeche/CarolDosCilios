@@ -141,6 +141,7 @@ function MobileTopNav({
 const EMPTY_KIWIFY: KiwifyData = {
   total_sales: 0, gross_revenue: 0, avg_ticket: 0, last_sale_at: null,
   by_source: { paid_traffic: 0, instagram: 0, manychat: 0, whatsapp: 0, direct: 0 },
+  by_creative: {},
 }
 
 export default function DashboardPage() {
@@ -176,8 +177,9 @@ export default function DashboardPage() {
 
   const fetchKiwify = useCallback(async () => {
     setKiwifyLoading(true)
+    const range = getDateRange(preset, customRange)
     try {
-      const res  = await fetch('/api/kiwify')
+      const res  = await fetch(`/api/kiwify?date_start=${range.start}&date_end=${range.end}`)
       const json = await res.json() as KiwifyData
       setKiwifyData(json)
     } catch {
@@ -185,7 +187,7 @@ export default function DashboardPage() {
     } finally {
       setKiwifyLoading(false)
     }
-  }, [])
+  }, [preset, customRange])
 
   useEffect(() => { fetchData()   }, [fetchData])
   useEffect(() => { fetchKiwify() }, [fetchKiwify])
@@ -292,7 +294,7 @@ export default function DashboardPage() {
           {/* ── Criativos ── */}
           {activeTab === 'creatives' && (
             <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-              <CreativesGrid ads={data?.ads ?? []} loading={loading} />
+              <CreativesGrid ads={data?.ads ?? []} loading={loading} kiwifyData={kiwifyData} />
             </div>
           )}
 

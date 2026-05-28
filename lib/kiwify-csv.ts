@@ -41,6 +41,7 @@ export function loadCSV(): KiwifySale[] {
   const statusCol  = col('Status')
   const amountCol  = col('Total com acréscimo')
   const utmSrcCol  = col('Tracking utm_source')
+  const utmConCol  = col('Tracking utm_content')
   const dateCol    = col('Data de Criação')
 
   const sales: KiwifySale[] = []
@@ -54,10 +55,11 @@ export function loadCSV(): KiwifySale[] {
     if (!isFinite(brl) || brl <= 0) continue
 
     sales.push({
-      id:           f[idCol]?.trim()    || `csv-${i}`,
+      id:           f[idCol]?.trim()     || `csv-${i}`,
       amount_cents: Math.round(brl * 100),
       created_at:   parseDate(f[dateCol] ?? ''),
       utm_source:   f[utmSrcCol]?.trim() || null,
+      utm_content:  f[utmConCol]?.trim() || null,
     })
   }
 

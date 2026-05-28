@@ -70,6 +70,7 @@ export interface KiwifyData {
     whatsapp: number
     direct: number
   }
+  by_creative: Record<string, { sales: number; revenue: number }>
 }
 
 export type ActiveTab = 'overview' | 'campaigns' | 'creatives'

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DatePreset, DateRange } from '@/types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import DateRangePicker from './DateRangePicker'
 
 interface HeaderProps {
   preset: DatePreset
@@ -23,16 +24,24 @@ const PRESETS: { value: DatePreset; label: string }[] = [
 export default function Header({
   preset, customRange, updatedAt, onPresetChange, onCustomRangeChange,
 }: HeaderProps) {
-  const [showCustom, setShowCustom] = useState(false)
+  const [showCustom,  setShowCustom]  = useState(false)
+  const [pickerOpen,  setPickerOpen]  = useState(false)
 
   function handlePreset(p: DatePreset) {
     onPresetChange(p)
-    setShowCustom(p === 'custom')
+    const isCustom = p === 'custom'
+    setShowCustom(isCustom)
+    if (isCustom) setPickerOpen(true)
+    else setPickerOpen(false)
   }
 
   const lastUpdate = updatedAt
     ? format(new Date(updatedAt), "dd/MM 'às' HH:mm", { locale: ptBR })
     : null
+
+  const displayRange = customRange.start && customRange.end
+    ? `${format(new Date(customRange.start + 'T12:00:00'), 'dd/MM')} → ${format(new Date(customRange.end + 'T12:00:00'), 'dd/MM')}`
+    : 'Selecionar datas'
 
   return (
     <header
@@ -42,6 +51,8 @@ export default function Header({
         borderBottom: '1px solid var(--border-subtle)',
         height: '52px',
         padding: '0 24px',
+        position: 'relative',
+        zIndex: 10,
       }}
     >
       {/* Breadcrumb */}
@@ -54,7 +65,7 @@ export default function Header({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-3">
         {/* Preset buttons */}
         <div className="flex items-center gap-1">
           {PRESETS.map((p) => {
@@ -81,34 +92,33 @@ export default function Header({
           })}
         </div>
 
-        {/* Custom range */}
+        {/* Custom range trigger + calendar */}
         {showCustom && (
-          <div
-            className="flex items-center gap-2 font-body"
-            style={{
-              padding: '4px 10px',
-              fontSize: '12px',
-              border: '1px solid var(--border)',
-              borderRadius: '3px',
-              background: 'var(--surface-1)',
-              color: 'var(--cream)',
-            }}
-          >
-            <input
-              type="date"
-              value={customRange.start}
-              onChange={e => onCustomRangeChange({ ...customRange, start: e.target.value })}
-              className="bg-transparent outline-none"
-              style={{ color: 'var(--cream)', fontSize: '12px', fontFamily: '"DM Sans"' }}
-            />
-            <span style={{ color: 'var(--muted)' }}>→</span>
-            <input
-              type="date"
-              value={customRange.end}
-              onChange={e => onCustomRangeChange({ ...customRange, end: e.target.value })}
-              className="bg-transparent outline-none"
-              style={{ color: 'var(--cream)', fontSize: '12px', fontFamily: '"DM Sans"' }}
-            />
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setPickerOpen(o => !o)}
+              className="font-body"
+              style={{
+                padding: '4px 10px',
+                fontSize: '12px',
+                border: '1px solid var(--border)',
+                borderRadius: '3px',
+                background: pickerOpen ? 'var(--surface-2)' : 'var(--surface-1)',
+                color: 'var(--cream)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {displayRange}
+            </button>
+
+            {pickerOpen && (
+              <DateRangePicker
+                value={customRange}
+                onChange={(r) => { onCustomRangeChange(r); setPickerOpen(false) }}
+                onClose={() => setPickerOpen(false)}
+              />
+            )}
           </div>
         )}
 
