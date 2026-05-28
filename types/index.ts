@@ -51,7 +51,7 @@ export interface DashboardData {
   updatedAt: string
 }
 
-export type DatePreset = 'today' | 'yesterday' | 'last_7d' | 'custom'
+export type DatePreset = 'today' | 'yesterday' | 'last_7d' | 'max' | 'custom'
 
 export interface DateRange {
   start: string

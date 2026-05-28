@@ -21,6 +21,11 @@ function getDateRange(preset: DatePreset, custom: DateRange): DateRange {
       return { start: format(startOfYesterday(), 'yyyy-MM-dd'), end: format(endOfYesterday(), 'yyyy-MM-dd') }
     case 'last_7d':
       return { start: format(subDays(today, 6), 'yyyy-MM-dd'), end: format(today, 'yyyy-MM-dd') }
+    case 'max':
+      return {
+        start: process.env.NEXT_PUBLIC_CAMPAIGN_START_DATE ?? '2026-05-24',
+        end:   format(today, 'yyyy-MM-dd'),
+      }
     case 'custom':
       return custom
   }
@@ -159,38 +164,32 @@ export default function DashboardPage() {
 
   const currentRange = getDateRange(preset, customRange)
 
+  // Fix 3: Meta e Kiwify sempre usam o mesmo range, em paralelo
   const fetchData = useCallback(async () => {
+    const range = getDateRange(preset, customRange)
     setLoading(true)
-    setError(null)
-    const range = getDateRange(preset, customRange)
-    try {
-      const res  = await fetch(`/api/meta?date_start=${range.start}&date_end=${range.end}`)
-      const json = await res.json() as ApiResponse
-      if (json.error) throw new Error(json.error)
-      setData(json)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar dados')
-    } finally {
-      setLoading(false)
-    }
-  }, [preset, customRange])
-
-  const fetchKiwify = useCallback(async () => {
     setKiwifyLoading(true)
-    const range = getDateRange(preset, customRange)
-    try {
-      const res  = await fetch(`/api/kiwify?date_start=${range.start}&date_end=${range.end}`)
-      const json = await res.json() as KiwifyData
-      setKiwifyData(json)
-    } catch {
-      setKiwifyData(EMPTY_KIWIFY)
-    } finally {
-      setKiwifyLoading(false)
+    setError(null)
+
+    const [metaResult, kiwifyResult] = await Promise.allSettled([
+      fetch(`/api/meta?date_start=${range.start}&date_end=${range.end}`).then(r => r.json() as Promise<ApiResponse>),
+      fetch(`/api/kiwify?date_start=${range.start}&date_end=${range.end}`).then(r => r.json() as Promise<KiwifyData>),
+    ])
+
+    if (metaResult.status === 'fulfilled') {
+      const json = metaResult.value
+      if (json.error) setError(json.error)
+      else setData(json)
+    } else {
+      setError(metaResult.reason?.message ?? 'Erro ao carregar dados')
     }
+    setLoading(false)
+
+    setKiwifyData(kiwifyResult.status === 'fulfilled' ? kiwifyResult.value : EMPTY_KIWIFY)
+    setKiwifyLoading(false)
   }, [preset, customRange])
 
-  useEffect(() => { fetchData()   }, [fetchData])
-  useEffect(() => { fetchKiwify() }, [fetchKiwify])
+  useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     const t = setInterval(fetchData, 5 * 60 * 1000)
     return () => clearInterval(t)

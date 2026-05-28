@@ -163,6 +163,14 @@ function AdSetTable({
       >
         Conjuntos de Anúncios
       </div>
+
+      {!loading && sorted.length === 0 && (
+        <div className="flex items-center justify-center py-10" style={{ background: 'var(--surface-1)' }}>
+          <p className="font-body" style={{ fontSize: '13px', color: 'var(--muted)' }}>Nenhum conjunto encontrado para este período</p>
+        </div>
+      )}
+
+      {(loading || sorted.length > 0) && (
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead style={{ background: 'var(--surface-2)' }}>
@@ -210,6 +218,7 @@ function AdSetTable({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }
@@ -360,16 +369,22 @@ export default function CampaignDrillDown({ campaigns, loading, dateRange }: Pro
 
   const handleCampaignSelect = useCallback(async (c: MetaCampaign) => {
     setSelCamp(c)
+    setAdsets([])
     setLevel(2)
     setLoadingL2(true)
     try {
-      const res = await fetch(
+      const res  = await fetch(
         `/api/meta/adsets?campaign_id=${c.id}&date_start=${dateRange.start}&date_end=${dateRange.end}`
       )
-      const data = await res.json()
-      setAdsets(data.adsets ?? [])
-    } catch { setAdsets([]) }
-    finally { setLoadingL2(false) }
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setAdsets(json.adsets ?? [])
+    } catch (err) {
+      console.error('[Adsets]', err)
+      setAdsets([])
+    } finally {
+      setLoadingL2(false)
+    }
   }, [dateRange])
 
   const handleAdsetSelect = useCallback(async (a: MetaAdSet) => {

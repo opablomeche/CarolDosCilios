@@ -18,6 +18,7 @@ const PRESETS: { value: DatePreset; label: string }[] = [
   { value: 'today',     label: 'Hoje' },
   { value: 'yesterday', label: 'Ontem' },
   { value: 'last_7d',   label: 'Últimos 7 dias' },
+  { value: 'max',       label: 'Máximo' },
   { value: 'custom',    label: 'Personalizado' },
 ]
 
@@ -31,8 +32,7 @@ export default function Header({
     onPresetChange(p)
     const isCustom = p === 'custom'
     setShowCustom(isCustom)
-    if (isCustom) setPickerOpen(true)
-    else setPickerOpen(false)
+    setPickerOpen(isCustom)
   }
 
   const lastUpdate = updatedAt
