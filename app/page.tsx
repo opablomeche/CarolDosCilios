@@ -171,9 +171,13 @@ export default function DashboardPage() {
     setKiwifyLoading(true)
     setError(null)
 
+    const kiwifyUrl = preset === 'max'
+      ? `/api/kiwify?all=true`
+      : `/api/kiwify?date_start=${range.start}&date_end=${range.end}`
+
     const [metaResult, kiwifyResult] = await Promise.allSettled([
       fetch(`/api/meta?date_start=${range.start}&date_end=${range.end}`).then(r => r.json() as Promise<ApiResponse>),
-      fetch(`/api/kiwify?date_start=${range.start}&date_end=${range.end}`).then(r => r.json() as Promise<KiwifyData>),
+      fetch(kiwifyUrl).then(r => r.json() as Promise<KiwifyData>),
     ])
 
     if (metaResult.status === 'fulfilled') {

@@ -5,6 +5,11 @@ import { loadCSV } from '@/lib/kiwify-csv'
 export async function GET(req: NextRequest) {
   seedFromCSV(loadCSV())
   const { searchParams } = req.nextUrl
+
+  if (searchParams.get('all') === 'true') {
+    return NextResponse.json(getStats())
+  }
+
   const dateStart = searchParams.get('date_start') ?? undefined
   const dateEnd   = searchParams.get('date_end')   ?? undefined
   return NextResponse.json(getStats(dateStart, dateEnd))
