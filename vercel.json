@@ -2,15 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "devCommand": "next dev",
-  "installCommand": "npm install",
-  "env": {
-    "META_ACCESS_TOKEN": "@meta_access_token",
-    "META_APP_ID": "@meta_app_id",
-    "META_APP_SECRET": "@meta_app_secret",
-    "META_AD_ACCOUNT_ID": "@meta_ad_account_id",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "KIWIFY_WEBHOOK_SECRET": "@kiwify_webhook_secret"
-  }
+  "installCommand": "npm install"
 }
