@@ -6,20 +6,19 @@ import { formatCurrency, formatCompact, formatPercent, safeDiv } from '@/lib/for
 interface Props { data: DashboardData | null; loading: boolean }
 
 interface Step {
-  label:          string
-  display:        string
-  barPct:         number
-  fillOpacity:    number
-  isLast:         boolean
-  connRate?:      string
-  connLabel?:     string
-  metrics:        { label: string; value: string }[]
+  label:       string
+  display:     string
+  barPct:      number
+  fillOpacity: number
+  isLast:      boolean
+  connRate?:   string
+  connLabel?:  string
+  metrics:     { label: string; value: string }[]
 }
 
 function buildSteps(data: DashboardData): Step[] {
   const t = data.totals
   const max = t.impressions || 1
-
   const pct = (n: number) => Math.max(3, (n / max) * 100)
 
   return [
@@ -32,7 +31,7 @@ function buildSteps(data: DashboardData): Step[] {
       ],
     },
     {
-      label: 'Cliques no Link', display: formatCompact(t.clicks),
+      label: 'Cliques', display: formatCompact(t.clicks),
       barPct: pct(t.clicks), fillOpacity: 0.13, isLast: false,
       connRate: formatPercent(safeDiv(t.clicks, t.impressions) * 100), connLabel: 'CTR',
       metrics: [{ label: 'CPC', value: formatCurrency(t.cpc) }],
@@ -40,52 +39,102 @@ function buildSteps(data: DashboardData): Step[] {
     {
       label: 'Views de Página', display: formatCompact(t.landing_page_views),
       barPct: pct(t.landing_page_views), fillOpacity: 0.10, isLast: false,
-      connRate: formatPercent(t.page_view_rate), connLabel: 'Connect Rate',
+      connRate: formatPercent(t.page_view_rate), connLabel: 'Connect',
       metrics: [
-        { label: 'Connect Rate', value: formatPercent(t.page_view_rate) },
-        { label: 'Custo/View',   value: formatCurrency(safeDiv(t.spend, t.landing_page_views)) },
+        { label: 'Connect', value: formatPercent(t.page_view_rate) },
+        { label: 'Custo',   value: formatCurrency(safeDiv(t.spend, t.landing_page_views)) },
       ],
     },
     {
       label: 'Checkouts', display: formatCompact(t.initiate_checkout),
       barPct: pct(t.initiate_checkout), fillOpacity: 0.08, isLast: false,
-      connRate: formatPercent(t.checkout_rate), connLabel: 'Pág → Checkout',
+      connRate: formatPercent(t.checkout_rate), connLabel: 'Pág→Checkout',
       metrics: [
-        { label: 'Pág × Checkout',  value: formatPercent(t.checkout_rate) },
-        { label: 'Custo/Checkout', value: formatCurrency(safeDiv(t.spend, t.initiate_checkout)) },
+        { label: 'Pág×CK',  value: formatPercent(t.checkout_rate) },
+        { label: 'Custo',   value: formatCurrency(safeDiv(t.spend, t.initiate_checkout)) },
       ],
     },
     {
       label: 'Compras', display: formatCompact(t.purchases),
       barPct: pct(t.purchases), fillOpacity: 0.22, isLast: true,
-      connRate: formatPercent(t.purchase_rate), connLabel: 'Checkout → Compra',
+      connRate: formatPercent(t.purchase_rate), connLabel: 'CK→Compra',
       metrics: [
-        { label: 'Checkout × Compra', value: formatPercent(t.purchase_rate) },
-        { label: 'CPA',               value: formatCurrency(t.cost_per_purchase) },
-        { label: 'CPA c/ Imposto',    value: formatCurrency(t.cpa_with_tax) },
+        { label: 'CK×Compra', value: formatPercent(t.purchase_rate) },
+        { label: 'CPA',        value: formatCurrency(t.cost_per_purchase) },
+        { label: 'CPA+imp.',   value: formatCurrency(t.cpa_with_tax) },
       ],
     },
   ]
 }
 
-export default function ConversionFunnel({ data, loading }: Props) {
-  if (loading || !data) {
-    return (
-      <div className="space-y-2" style={{ paddingLeft: '160px' }}>
-        {[100, 68, 48, 30, 18].map((w, i) => (
-          <div key={i} className="skeleton" style={{ height: '36px', width: `${w}%` }} />
-        ))}
-      </div>
-    )
-  }
+// ── Barra compartilhada ────────────────────────────────────────────────────────
 
-  const steps = buildSteps(data)
+function Bar({ step }: { step: Step }) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '34px',
+        borderRadius: '3px',
+        background: `linear-gradient(to right, rgba(255,255,255,${step.fillOpacity}) ${step.barPct}%, var(--surface-3) ${step.barPct}%)`,
+        border: step.isLast ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: '10px',
+      }}
+    >
+      <span className="font-display" style={{ fontSize: '15px', fontWeight: 500, color: 'var(--white)', whiteSpace: 'nowrap' }}>
+        {step.display}
+      </span>
+    </div>
+  )
+}
 
+// ── Layout Mobile (< md) ───────────────────────────────────────────────────────
+
+function MobileFunnel({ steps }: { steps: Step[] }) {
+  return (
+    <div className="space-y-0">
+      {steps.map((step, i) => (
+        <div key={step.label}>
+          {i > 0 && step.connRate && (
+            <div className="flex items-center gap-2 py-1" style={{ paddingLeft: '6px' }}>
+              <div style={{ width: '1px', height: '14px', background: 'var(--border)', flexShrink: 0 }} />
+              <span className="font-body" style={{ fontSize: '10px', color: 'var(--muted-light)' }}>
+                {step.connRate}
+                <span style={{ color: 'var(--muted)', marginLeft: '4px' }}>{step.connLabel}</span>
+              </span>
+            </div>
+          )}
+          <div style={{ marginBottom: '2px' }}>
+            {/* Label + métricas em cima */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-body" style={{ fontSize: '11px', color: 'var(--muted-light)', fontWeight: 400 }}>
+                {step.label}
+              </span>
+              <div className="flex gap-3">
+                {step.metrics.slice(0, 2).map(m => (
+                  <span key={m.label} className="font-body" style={{ fontSize: '10px', color: 'var(--muted)' }}>
+                    {m.label} <span style={{ color: 'var(--muted-light)' }}>{m.value}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Bar step={step} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Layout Desktop (>= md) ─────────────────────────────────────────────────────
+
+function DesktopFunnel({ steps }: { steps: Step[] }) {
   return (
     <div>
       {steps.map((step, i) => (
         <div key={step.label}>
-          {/* Connector */}
           {i > 0 && step.connRate && (
             <div className="flex items-center" style={{ height: '24px', paddingLeft: '160px' }}>
               <div style={{ width: '1px', height: '100%', background: 'var(--border)', marginRight: '10px' }} />
@@ -97,18 +146,13 @@ export default function ConversionFunnel({ data, loading }: Props) {
               </span>
             </div>
           )}
-
-          {/* Step row: [label 160px] [bar flex-1] [metrics 220px] */}
           <div className="flex items-center" style={{ height: '36px' }}>
-            {/* Label */}
             <div
               className="flex items-center justify-end font-body"
-              style={{ width: '160px', flexShrink: 0, paddingRight: '14px', fontSize: '12px', color: 'var(--muted-light)', fontWeight: 400 }}
+              style={{ width: '160px', flexShrink: 0, paddingRight: '14px', fontSize: '12px', color: 'var(--muted-light)' }}
             >
               {step.label}
             </div>
-
-            {/* Bar — gradient fill via background */}
             <div className="flex-1 flex items-center" style={{ minWidth: 0 }}>
               <div
                 className="flex items-center font-display"
@@ -121,15 +165,11 @@ export default function ConversionFunnel({ data, loading }: Props) {
                   paddingLeft: '12px',
                 }}
               >
-                <span
-                  style={{ fontSize: '16px', fontWeight: 500, color: 'var(--white)', lineHeight: 1, whiteSpace: 'nowrap' }}
-                >
+                <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--white)', lineHeight: 1, whiteSpace: 'nowrap' }}>
                   {step.display}
                 </span>
               </div>
             </div>
-
-            {/* Metrics — always outside the bar */}
             <div
               className="flex items-center gap-5 font-body"
               style={{ width: '220px', flexShrink: 0, paddingLeft: '16px' }}
@@ -149,5 +189,49 @@ export default function ConversionFunnel({ data, loading }: Props) {
         </div>
       ))}
     </div>
+  )
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function SkeletonMobile() {
+  return (
+    <div className="space-y-3">
+      {[100, 68, 48, 30, 18].map((w, i) => (
+        <div key={i} className="skeleton" style={{ height: '34px', width: `${w}%` }} />
+      ))}
+    </div>
+  )
+}
+
+function SkeletonDesktop() {
+  return (
+    <div className="space-y-2" style={{ paddingLeft: '160px' }}>
+      {[100, 68, 48, 30, 18].map((w, i) => (
+        <div key={i} className="skeleton" style={{ height: '36px', width: `${w}%` }} />
+      ))}
+    </div>
+  )
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+export default function ConversionFunnel({ data, loading }: Props) {
+  if (loading || !data) {
+    return (
+      <>
+        <div className="md:hidden"><SkeletonMobile /></div>
+        <div className="hidden md:block"><SkeletonDesktop /></div>
+      </>
+    )
+  }
+
+  const steps = buildSteps(data)
+
+  return (
+    <>
+      <div className="md:hidden"><MobileFunnel steps={steps} /></div>
+      <div className="hidden md:block"><DesktopFunnel steps={steps} /></div>
+    </>
   )
 }

@@ -81,6 +81,17 @@ body {
 .delay-240 { animation-delay: 240ms; animation-fill-mode: both; }
 .delay-320 { animation-delay: 320ms; animation-fill-mode: both; }
 
+/* Mobile: esconde o segundo mês no date picker */
+@media (max-width: 439px) {
+  .picker-second-month { display: none; }
+}
+
+/* Tabelas: reduz padding em mobile */
+@media (max-width: 767px) {
+  .th { padding: 8px 10px; font-size: 9px; }
+  .td { padding: 8px 10px; font-size: 12px; }
+}
+
 /* Skeleton shimmer */
 .skeleton {
   background: var(--surface-2);

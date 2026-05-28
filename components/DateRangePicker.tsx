@@ -148,14 +148,17 @@ export default function DateRangePicker({ value, onChange, onClose }: Props) {
       style={{
         position: 'fixed',
         top: '60px',
-        right: '24px',
+        left: '50%',
+        transform: 'translateX(-50%)',
         zIndex: 200,
         background: 'var(--surface-2)',
         border: '1px solid var(--border)',
         borderRadius: '6px',
-        padding: '16px',
+        padding: '12px',
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-        minWidth: '460px',
+        width: 'min(460px, calc(100vw - 16px))',
+        maxHeight: 'calc(100vh - 80px)',
+        overflowY: 'auto',
       }}
     >
       {/* Month navigation + calendars */}
@@ -169,7 +172,7 @@ export default function DateRangePicker({ value, onChange, onClose }: Props) {
 
         <div className="flex gap-5">
           {renderMonth(leftMonth)}
-          {renderMonth(rightMonth)}
+          <div className="picker-second-month">{renderMonth(rightMonth)}</div>
         </div>
 
         <button

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { format, subDays, startOfYesterday, endOfYesterday } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { ActiveTab, DatePreset, DateRange, DashboardData, KiwifyData } from '@/types'
 import Sidebar           from '@/components/Sidebar'
 import Header            from '@/components/Header'
@@ -11,6 +12,7 @@ import ConversionFunnel  from '@/components/ConversionFunnel'
 import Charts            from '@/components/Charts'
 import CampaignDrillDown from '@/components/CampaignDrillDown'
 import CreativesGrid     from '@/components/CreativesGrid'
+import DateRangePicker   from '@/components/DateRangePicker'
 
 function getDateRange(preset: DatePreset, custom: DateRange): DateRange {
   const today = new Date()
@@ -55,6 +57,84 @@ const NAV_ITEMS: { id: ActiveTab; label: string }[] = [
   { id: 'campaigns',  label: 'Campanhas'   },
   { id: 'creatives',  label: 'Criativos'   },
 ]
+
+const MOBILE_PRESETS: { value: DatePreset; label: string }[] = [
+  { value: 'today',     label: 'Hoje' },
+  { value: 'yesterday', label: 'Ontem' },
+  { value: 'last_7d',   label: '7 dias' },
+  { value: 'max',       label: 'Máx' },
+  { value: 'custom',    label: 'Custom' },
+]
+
+function MobilePeriodBar({
+  preset, customRange, updatedAt, onPresetChange, onCustomRangeChange,
+}: {
+  preset: DatePreset
+  customRange: DateRange
+  updatedAt?: string
+  onPresetChange: (p: DatePreset) => void
+  onCustomRangeChange: (r: DateRange) => void
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  function handlePreset(p: DatePreset) {
+    onPresetChange(p)
+    if (p === 'custom') setPickerOpen(true)
+    else setPickerOpen(false)
+  }
+
+  const displayLabel = preset === 'custom' && customRange.start && customRange.end
+    ? `${format(new Date(customRange.start + 'T12:00:00'), 'dd/MM')}→${format(new Date(customRange.end + 'T12:00:00'), 'dd/MM')}`
+    : 'Custom'
+
+  const lastUpdate = updatedAt
+    ? format(new Date(updatedAt), "HH:mm", { locale: ptBR })
+    : null
+
+  return (
+    <div style={{ background: '#080808', borderBottom: '1px solid var(--border-subtle)', position: 'relative' }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as const }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '7px 12px', whiteSpace: 'nowrap' }}>
+          {MOBILE_PRESETS.map(p => {
+            const isActive = preset === p.value
+            const label = p.value === 'custom' ? displayLabel : p.label
+            return (
+              <button
+                key={p.value}
+                onClick={() => handlePreset(p.value)}
+                className="font-body"
+                style={{
+                  padding: '3px 9px',
+                  fontSize: '11px',
+                  borderRadius: '3px',
+                  border: isActive ? '1px solid var(--white)' : '1px solid var(--border)',
+                  color: isActive ? 'var(--white)' : 'var(--muted)',
+                  background: isActive ? 'var(--surface-2)' : 'transparent',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
+          {lastUpdate && (
+            <span className="font-body" style={{ fontSize: '10px', color: 'var(--muted)', marginLeft: '6px', fontWeight: 300, flexShrink: 0 }}>
+              · {lastUpdate}
+            </span>
+          )}
+        </div>
+      </div>
+      {preset === 'custom' && pickerOpen && (
+        <DateRangePicker
+          value={customRange}
+          onChange={r => { onCustomRangeChange(r); setPickerOpen(false) }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
 
 function MobileTopNav({
   activeTab,
@@ -207,9 +287,16 @@ export default function DashboardPage() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Mobile nav — below lg */}
+        {/* Mobile nav + period bar — below lg */}
         <div className="lg:hidden">
           <MobileTopNav activeTab={activeTab} onTabChange={setActiveTab} />
+          <MobilePeriodBar
+            preset={preset}
+            customRange={customRange}
+            updatedAt={data?.updatedAt}
+            onPresetChange={setPreset}
+            onCustomRangeChange={setCustomRange}
+          />
         </div>
 
         {/* Header — lg and above */}
@@ -223,7 +310,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <main className="flex-1 overflow-y-auto" style={{ padding: '24px 20px' }}>
+        <main className="flex-1 overflow-y-auto p-3 md:p-5 lg:p-6">
 
           {/* Error banner */}
           {error && !loading && (
