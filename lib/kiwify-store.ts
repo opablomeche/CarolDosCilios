@@ -1,3 +1,6 @@
+import fs from 'fs'
+import path from 'path'
+
 export interface KiwifySale {
   id: string
   amount_cents: number
@@ -18,6 +21,11 @@ export function seedFromCSV(csvSales: KiwifySale[]): void {
   if (seeded) return
   seeded = true
   for (const s of csvSales) addSale(s)
+  try {
+    const webhookPath = path.join(process.cwd(), 'data', 'kiwify-webhook.json')
+    const webhookSales: KiwifySale[] = JSON.parse(fs.readFileSync(webhookPath, 'utf-8'))
+    for (const s of webhookSales) addSale(s)
+  } catch {}
 }
 
 function classifySource(utm_source: string | null): keyof ReturnType<typeof getStats>['by_source'] {

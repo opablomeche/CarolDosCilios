@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addSale } from '@/lib/kiwify-store'
+import fs from 'fs'
+import path from 'path'
+import { addSale, KiwifySale } from '@/lib/kiwify-store'
+
+const webhookFile = path.join(process.cwd(), 'data', 'kiwify-webhook.json')
+
+function appendWebhookSale(sale: KiwifySale) {
+  let existing: KiwifySale[] = []
+  try { existing = JSON.parse(fs.readFileSync(webhookFile, 'utf-8')) } catch {}
+  if (!existing.find(s => s.id === sale.id)) {
+    existing.push(sale)
+    fs.writeFileSync(webhookFile, JSON.stringify(existing, null, 2))
+  }
+}
 
 interface KiwifyPayload {
   event: string
@@ -39,13 +52,15 @@ export async function POST(req: NextRequest) {
   }
 
   const { id, amount, created_at, tracking } = payload.data
-  addSale({
+  const sale: KiwifySale = {
     id,
     amount_cents: amount,
     created_at,
     utm_source:  tracking?.utm_source  ?? null,
     utm_content: tracking?.utm_content ?? null,
-  })
+  }
+  addSale(sale)
+  appendWebhookSale(sale)
 
   return NextResponse.json({ ok: true })
 }

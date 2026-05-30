@@ -223,135 +223,75 @@ function AdSetTable({
   )
 }
 
-// ─── Level 3 — Ads grid ───────────────────────────────────────────────────────
+// ─── Level 3 — Ads table (active only) ───────────────────────────────────────
 
-function AdCard({ ad }: { ad: MetaAd }) {
-  const isPaused = ad.status !== 'ACTIVE'
-
-  function openAd() {
-    const url = ad.instagram_permalink_url
-      ?? `https://www.instagram.com/ads/archive/preview/${ad.id}/`
-    window.open(url, '_blank', 'noopener')
-  }
+function AdsTable({ ads, loading }: { ads: MetaAd[]; loading: boolean }) {
+  const active = [...ads]
+    .filter(a => a.status === 'ACTIVE')
+    .sort((a, b) => (a.insights?.cost_per_purchase ?? Infinity) - (b.insights?.cost_per_purchase ?? Infinity))
 
   return (
-    <div
-      className="rounded-card border overflow-hidden group transition-shadow duration-150"
-      style={{
-        background: 'var(--surface-1)',
-        borderColor: 'var(--border-subtle)',
-        opacity: isPaused ? 0.55 : 1,
-      }}
-    >
-      {/* Thumbnail */}
+    <div className="rounded-card border overflow-hidden" style={{ borderColor: 'var(--border-subtle)' }}>
       <div
-        className="relative cursor-pointer"
-        style={{ aspectRatio: '16/9', background: 'var(--surface-3)' }}
-        onClick={openAd}
+        className="px-4 py-2 font-body flex items-center gap-2"
+        style={{ background: 'var(--accent-teal-bg)', borderBottom: '1px solid var(--accent-teal)', fontSize: '11px', color: 'var(--accent-teal)', fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase' }}
       >
-        {/* Status badge */}
-        <span
-          className="absolute top-2 right-2 z-10 font-body"
-          style={{
-            padding: '2px 7px',
-            fontSize: '10px',
-            borderRadius: '3px',
-            background: isPaused ? 'var(--paused-bg)' : 'var(--active-bg)',
-            color: isPaused ? 'var(--paused-text)' : 'var(--active-text)',
-            border: `1px solid ${isPaused ? 'var(--paused-border)' : 'var(--active-border)'}`,
-          }}
-        >
-          {isPaused ? 'Pausado' : 'Ativo'}
-        </span>
+        <span>Criativos ativos</span>
+        {!loading && <><span style={{ opacity: 0.6 }}>·</span><span>{active.length}</span></>}
+      </div>
 
-        {ad.thumbnail_url
-          ? <img src={ad.thumbnail_url} alt="" className="w-full h-full object-cover" />
-          : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span style={{ color: 'var(--border)', fontSize: '28px' }}>▷</span>
-            </div>
-          )
-        }
-
-        {/* Play overlay */}
-        <div
-          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-          style={{ background: 'rgba(0,0,0,0.55)' }}
-        >
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.9)' }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="#000"><path d="M3 2l9 5-9 5V2z"/></svg>
-          </div>
+      {!loading && active.length === 0 && (
+        <div className="flex items-center justify-center py-10" style={{ background: 'var(--surface-1)' }}>
+          <p className="font-body" style={{ fontSize: '13px', color: 'var(--muted)' }}>Nenhum criativo ativo neste período</p>
         </div>
-      </div>
+      )}
 
-      {/* Info */}
-      <div style={{ padding: '12px 14px' }}>
-        <p className="font-body mb-3 line-clamp-2" style={{ fontSize: '11px', color: 'var(--muted-light)', lineHeight: 1.4 }}
-          title={ad.name}>{ad.name}</p>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { l: 'Invest.', v: ad.insights ? formatCurrency(ad.insights.spend) : '—' },
-            { l: 'Compras', v: ad.insights ? formatNumber(ad.insights.purchases) : '—' },
-            { l: 'CPA',     v: ad.insights?.cost_per_purchase ? formatCurrency(ad.insights.cost_per_purchase) : '—', hi: true },
-            { l: 'CTR',     v: ad.insights ? formatPercent(ad.insights.ctr) : '—' },
-          ].map(m => (
-            <div key={m.l} className="text-center">
-              <p className="font-body uppercase" style={{ fontSize: '9px', fontWeight: 300, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: '3px' }}>{m.l}</p>
-              <p className="font-display" style={{ fontSize: '15px', fontWeight: 500, color: m.hi ? 'var(--gold)' : 'var(--white)' }}>{m.v}</p>
-            </div>
-          ))}
+      {(loading || active.length > 0) && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead style={{ background: 'var(--surface-2)' }}>
+              <tr>
+                {['Criativo', 'Investimento', 'Compras', 'CPA', 'CTR'].map((h, i) => (
+                  <th key={i} className={`th ${i > 0 ? 'th-r' : ''}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ background: 'var(--surface-1)' }}>
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={5} />)
+                : active.map((ad, i) => (
+                    <tr
+                      key={ad.id}
+                      style={{ background: i % 2 === 0 ? 'var(--surface-1)' : 'var(--surface-2)' }}
+                    >
+                      <td className="td" style={{ maxWidth: '300px' }}>
+                        <div className="flex items-center gap-2">
+                          {ad.thumbnail_url
+                            ? <img src={ad.thumbnail_url} alt="" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '3px', flexShrink: 0 }} />
+                            : <div style={{ width: '32px', height: '32px', borderRadius: '3px', background: 'var(--surface-3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: 'var(--border)', fontSize: '10px' }}>▷</span></div>
+                          }
+                          <span className="block truncate font-body" style={{ fontSize: '12px', color: 'var(--accent-teal)' }} title={ad.name}>{ad.name}</span>
+                        </div>
+                      </td>
+                      <td className="td td-r" style={{ color: 'var(--gold)' }}>
+                        {ad.insights ? formatCurrency(ad.insights.spend) : '—'}
+                      </td>
+                      <td className="td td-r">
+                        {ad.insights ? formatNumber(ad.insights.purchases) : '—'}
+                      </td>
+                      <td className="td td-r" style={{ color: ad.insights?.cost_per_purchase ? 'var(--gold)' : 'var(--muted)' }}>
+                        {ad.insights?.cost_per_purchase ? formatCurrency(ad.insights.cost_per_purchase) : '—'}
+                      </td>
+                      <td className="td td-r" style={{ color: 'var(--muted-light)' }}>
+                        {ad.insights ? formatPercent(ad.insights.ctr) : '—'}
+                      </td>
+                    </tr>
+                  ))
+              }
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function AdsGrid({ ads, loading }: { ads: MetaAd[]; loading: boolean }) {
-  const sorted = [...ads].sort((a, b) => {
-    if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1
-    if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1
-    return (a.insights?.cost_per_purchase ?? Infinity) - (b.insights?.cost_per_purchase ?? Infinity)
-  })
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="rounded-card border overflow-hidden" style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}>
-            <div className="skeleton" style={{ aspectRatio: '16/9' }} />
-            <div style={{ padding: '12px' }}>
-              <div className="skeleton mb-3" style={{ height: '9px', width: '80%' }} />
-              <div className="grid grid-cols-4 gap-2">
-                {[0,1,2,3].map(j => <div key={j} className="skeleton" style={{ height: '28px' }} />)}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (sorted.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-16 rounded-card border" style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}>
-        <p className="font-body" style={{ fontSize: '13px', color: 'var(--muted)' }}>Nenhum anúncio encontrado</p>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <div
-        className="mb-4 px-4 py-2 rounded font-body"
-        style={{ background: 'var(--accent-teal-bg)', border: '1px solid var(--accent-teal)', fontSize: '11px', color: 'var(--accent-teal)', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-      >
-        <span>Criativos deste conjunto</span>
-        <span style={{ opacity: 0.6 }}>·</span>
-        <span>{sorted.filter(a => a.status === 'ACTIVE').length} ativos</span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {sorted.map(ad => <AdCard key={ad.id} ad={ad} />)}
-      </div>
+      )}
     </div>
   )
 }
@@ -422,7 +362,7 @@ export default function CampaignDrillDown({ campaigns, loading, dateRange }: Pro
         <AdSetTable adsets={adsets} loading={loadingL2} onSelect={handleAdsetSelect} />
       )}
       {level === 3 && (
-        <AdsGrid ads={drillAds} loading={loadingL3} />
+        <AdsTable ads={drillAds} loading={loadingL3} />
       )}
     </div>
   )
